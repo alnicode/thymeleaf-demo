@@ -1,14 +1,16 @@
 package com.alnicode.contacts.service.impl;
 
-import com.alnicode.contacts.dto.user.UserRequest;
-import com.alnicode.contacts.dto.user.UserResponse;
-import com.alnicode.contacts.mapper.UserMapper;
+import com.alnicode.contacts.dto.UserRequest;
+import com.alnicode.contacts.dto.UserResponse;
+import com.alnicode.contacts.mapper.IUserMapper;
 import com.alnicode.contacts.repository.IUserRepository;
 import com.alnicode.contacts.service.IUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -16,7 +18,7 @@ import java.util.Optional;
 public class UserServiceImpl implements IUserService {
 
     private final IUserRepository repository;
-    private final UserMapper mapper;
+    private final IUserMapper mapper;
 
     @Override
     @Transactional
@@ -25,6 +27,10 @@ public class UserServiceImpl implements IUserService {
 
         if (user.isPresent()) {
             throw new Exception("This user already exists!");
+        }
+
+        if (!request.passwordsMatch()) {
+            throw new Exception("Please, confirm your password.");
         }
 
         return mapper.toResponse(repository.save(mapper.toEntity(request)));
@@ -57,6 +63,58 @@ public class UserServiceImpl implements IUserService {
         } catch (Exception ex) {
             return false;
         }
+    }
+
+    @Override
+    @Transactional
+    public void addContact(long userId, long contactId) throws Exception {
+        final var user = repository.findById(userId)
+                .orElseThrow(() -> new Exception("The user with ID #" + userId + " not exists!"));
+
+        final var contact = repository.findById(contactId)
+                .orElseThrow(() -> new Exception("The contact with ID #" + contactId + " not exists!"));
+
+        if (userId == contactId) {
+            throw new Exception("You can't add yourself as a contact.");
+        }
+
+        user.addContact(contact);
+
+        repository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void removeContact(long userId, long contactId) throws Exception {
+        final var user = repository.findById(userId)
+                .orElseThrow(() -> new Exception("The user with ID #" + userId + " not exists!"));
+
+        final var contact = repository.findById(contactId)
+                .orElseThrow(() -> new Exception("The contact with ID #" + contactId + " not exists!"));
+
+        final var isAdded = user.getContacts()
+                .stream()
+                .anyMatch(_contact -> _contact.getId() == contactId);
+
+        if (!isAdded) {
+            throw new Exception("You don't have added a contact with ID #" + contactId);
+        }
+
+        user.removeContact(contact);
+
+        repository.save(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<List<UserResponse>> getContacts(long userId) {
+        final var user = repository.findById(userId);
+
+        if (user.isEmpty()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(mapper.toResponses(new ArrayList<>(user.get().getContacts())));
     }
 
 }
