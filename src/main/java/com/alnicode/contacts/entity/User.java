@@ -58,10 +58,12 @@ public class User {
 
     public void addContact(User contact) {
         contacts.add(contact);
+        contact.getContacts().add(this);
     }
 
     public void removeContact(User contact) {
         contacts.remove(contact);
+        contact.getContacts().remove(this);
     }
 
 }
