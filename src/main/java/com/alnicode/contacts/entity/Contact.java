@@ -28,7 +28,7 @@ public class Contact {
     @Column(length = 240)
     private String email;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.ALL})
+    @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name = "user_id", nullable = false, unique = true, insertable = false, updatable = false)
     private User user;
 

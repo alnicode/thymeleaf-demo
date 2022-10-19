@@ -36,7 +36,7 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @OneToMany(mappedBy = "user", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @OneToMany(mappedBy = "user", orphanRemoval = true, cascade = {CascadeType.ALL})
     private Set<Contact> contacts = new HashSet<>();
 
     @Override
